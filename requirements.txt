@@ -1,0 +1,7 @@
+mediapipe==0.10.21
+tensorflow==2.15.1
+numpy==1.26.4
+pandas==2.2.3
+scikit-learn==1.5.2
+protobuf==4.25.8
+opencv-python
