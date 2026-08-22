@@ -15,19 +15,19 @@ for label in LABELS:
 
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
-    print("ERROR: Webcam nahi mila!")
+    print("ERROR: Webcam is not detected!")
     exit()
 
 print("=" * 50)
-print("DATA COLLECTION SHURU HOGI")
-print("Har letter ke liye haath saamne rakh")
-print("SPACE dabao capture shuru karne ke liye")
-print("Q dabao quit karne ke liye")
+print("DATA COLLECTION IS STARTED")
+print("Place your hand in front of the camera for each letter")
+print("Press SPACE to start capturing")
+print("Press Q to quit")
 print("=" * 50)
 
 for label in LABELS:
-    print(f"\n>>> '{label}' sign ke liye ready ho jao!")
-    print(f"    SPACE dabao jab ready ho...")
+    print(f"\n>>> Get ready for the '{label}' sign!")
+    print(f"    Press SPACE when you are ready...")
 
     # Wait for SPACE
     while True:
@@ -35,9 +35,9 @@ for label in LABELS:
         if not ret:
             break
         frame = cv2.flip(frame, 1)
-        cv2.putText(frame, f"Sign: {label} | SPACE dabao", (10, 40),
+        cv2.putText(frame, f"Sign: {label} | Press SPACE", (10, 40),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        cv2.putText(frame, "Ready? SPACE dabao!", (10, 80),
+        cv2.putText(frame, "Ready? Press SPACE!", (10, 80),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 200, 255), 2)
         cv2.imshow("Data Collection", frame)
 
@@ -75,11 +75,11 @@ for label in LABELS:
         cv2.putText(frame, "Capturing...", (10, 80),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 200, 255), 2)
         cv2.imshow("Data Collection", frame)
-        cv2.waitKey(50)  # ~20fps
+        cv2.waitKey(42)  # ~24fps
 
-    print(f"    '{label}' done! {count} images save hui.")
+    print(f"    '{label}' sign done! {count} images are saved.")
 
 cap.release()
 cv2.destroyAllWindows()
 print("\nData collection complete!")
-print("Ab 2_extract_keypoints.py chalao.")
+print("Now run 2_extract_keypoints.py.")
