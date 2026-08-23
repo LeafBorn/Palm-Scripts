@@ -30,7 +30,7 @@ hands = mp_hands.Hands(
 prediction_buffer = deque(maxlen=15)
 
 cap = cv2.VideoCapture(0)
-print("Live test chal raha hai! Q dabao quit karne ke liye.")
+print("Live test is running! Press Q to quit.")
 
 while True:
     ret, frame = cap.read()
@@ -42,7 +42,8 @@ while True:
     img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     result = hands.process(img_rgb)
 
-    label_text = "Haath dikhao..."
+    label_text = "Show your hand..."
+
     confidence = 0.0
 
     if result.multi_hand_landmarks:

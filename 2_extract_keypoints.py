@@ -52,8 +52,9 @@ with open(OUTPUT_CSV, 'w', newline='') as f:
             else:
                 failed += 1
 
-        print(f"'{label}': {success} success, {failed} failed (haath detect nahi hua)")
+        print(f"'{label}': {success} successful, {failed} failed (hand not detected)")
+
 
 hands.close()
 print(f"\nKeypoints saved: {OUTPUT_CSV}")
-print("Ab 3_train_model.py chalao.")
+print("Now run 3_train_model.py.")

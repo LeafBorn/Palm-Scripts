@@ -93,4 +93,4 @@ print("\n", classification_report(y_test, y_pred, target_names=le.classes_))
 # Save model
 model.save(MODEL_PATH)
 print(f"\nModel saved: {MODEL_PATH}")
-print("Ab 4_live_test.py chalao!")
+print("Now run 4_live_test.py !")
