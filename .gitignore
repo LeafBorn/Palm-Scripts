@@ -2,3 +2,7 @@ data
 venv
 keypoints
 model
+1_collect_data.py
+2_extract_keypoints.py
+3_train_model.py
+4_live_test.py
