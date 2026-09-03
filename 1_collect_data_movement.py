@@ -5,11 +5,14 @@ import os
 import time
 
 # Settings
-GESTURES = [
-    'Hello', 'Thank You', 'Sorry', 'Yes', 'No', 'Good',
-    'Please', 'Help', 'I Love You', 'Come'
-]
-SEQUENCES_PER_GESTURE = 100
+'''GESTURES = [
+    'Hello', 'Thank You', 'Sorry', 'Yes', 'No', 'Good','Please', 'Help', 'I Love You'
+]'''
+
+GESTURES = ['Please'
+            ]
+
+SEQUENCES_PER_GESTURE = 50
 SEQUENCE_LENGTH = 30
 DATA_DIR = 'movement_data'
 
@@ -22,9 +25,10 @@ mp_holistic = mp.solutions.holistic
 mp_draw = mp.solutions.drawing_utils
 holistic = mp_holistic.Holistic(
     static_image_mode=False,
-    min_detection_confidence=0.7,
-    min_tracking_confidence=0.5
+    min_detection_confidence=0.5,  # 0.7 → 0.5
+    min_tracking_confidence=0.3    # 0.5 → 0.3
 )
+    
 
 def extract_keypoints(result):
     # Pose - 33 x 2 = 66 features
