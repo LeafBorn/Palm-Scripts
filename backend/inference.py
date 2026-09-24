@@ -33,11 +33,11 @@ class SignRecognizer:
         self.std = np.load(os.path.join(MODEL_DIR, 'std.npy'))
         print(f"✅ Model Loaded. Vocabulary: {len(self.signs)} signs.")
         
-        # MediaPipe Holistic - Higher sensitivity for reliable hand detection
+        # MediaPipe Holistic - Higher sensitivity for reliable hand detection (Lite model for 30 FPS)
         self.mp_holistic = mp.solutions.holistic
         self.holistic = self.mp_holistic.Holistic(
             static_image_mode=False,
-            model_complexity=1,
+            model_complexity=0,
             smooth_landmarks=True,
             min_detection_confidence=0.35,
             min_tracking_confidence=0.25
