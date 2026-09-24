@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+raw_recordings/
+processed_data/
+previous work/
+*.bat
+scratch/
+.system_generated/

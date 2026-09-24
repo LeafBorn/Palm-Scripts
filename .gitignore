@@ -1,8 +1,17 @@
-data
-venv
-keypoints
-model
-1_collect_data.py
-2_extract_keypoints.py
-3_train_model.py
-4_live_test.py
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+*.bat
+
+# Datasets (only trained models in sign_model/ are needed for deployment)
+raw_recordings/
+processed_data/
+movement_data/
+movement_keypoints/
+previous work/
+
+# Scratch & test scripts
+scratch/
+.system_generated/

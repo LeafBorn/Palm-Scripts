@@ -1,0 +1,547 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #000000;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  user-select: none;
+  position: relative;
+}
+
+/* Background Circuit SVG lines matching reference image */
+.circuit-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ============================================================ */
+/* EXACT CENTER HUD FROM PALMSCRIPT HUD */
+/* ============================================================ */
+.container {
+  position: absolute;
+  top: 50%;
+  left: 45%;
+  transform: translate(-50%, -50%);
+  width: 520px;
+  height: 520px;
+  z-index: 5;
+}
+
+canvas#hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.center-info {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #fff;
+  pointer-events: none;
+  z-index: 10;
+  width: 220px;
+}
+
+.model-name {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #aaa;
+  margin-bottom: 4px;
+}
+
+.model-id {
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  min-height: 30px;
+}
+
+.coords {
+  font-size: 11px;
+  color: #00ff66;
+  margin-top: 6px;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+.crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  z-index: 11;
+  pointer-events: none;
+}
+
+.badge-top-right {
+  position: absolute;
+  top: 60px;
+  right: 50px;
+  color: #fff;
+  font-size: 9px;
+  letter-spacing: 2px;
+  border: 1px solid #555;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.badge-left {
+  position: absolute;
+  top: 48%;
+  left: 10px;
+  color: #888;
+  font-size: 8px;
+  letter-spacing: 2px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.badge-right {
+  position: absolute;
+  top: 48%;
+  right: 10px;
+  color: #888;
+  font-size: 8px;
+  letter-spacing: 2px;
+  writing-mode: vertical-rl;
+}
+
+.bottom-text {
+  position: absolute;
+  bottom: 55px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #555;
+  font-size: 7px;
+  letter-spacing: 2px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.bottom-coords {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #444;
+  font-size: 7px;
+  letter-spacing: 1px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ============================================================ */
+/* THE 3 COMPACT SOLID BLACK RECTANGLES */
+/* ============================================================ */
+.tech-box {
+  position: absolute;
+  background: #000000;
+  border: 1.5px solid #ffffff;
+  padding: 10px 14px;
+  z-index: 6;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* Inside corner notch */
+.box-notch {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 8px;
+  height: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  border-left: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.box-plus {
+  position: absolute;
+  top: -8px;
+  left: -10px;
+  color: #fff;
+  font-size: 9px;
+}
+
+.box-title {
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.box-sub {
+  font-size: 9px;
+  color: #888888;
+  letter-spacing: 1px;
+}
+
+/* 1. Top-Left Box */
+.box-top-left {
+  top: 14%;
+  left: 8%;
+  width: 240px;
+}
+
+/* 2. Bottom-Left Box */
+.box-bottom-left {
+  bottom: 14%;
+  left: 8%;
+  width: 240px;
+}
+
+/* 3. Right Box (with user avatar) */
+.box-right {
+  top: 42%;
+  right: 22%;
+  width: 250px;
+}
+
+.user-icon {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+}
+
+.user-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: #ffffff;
+}
+
+/* ============================================================ */
+/* RIGHT VERTICAL NAVBAR */
+/* ============================================================ */
+.vertical-navbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 210px;
+  height: 100vh;
+  background: #080808;
+  border-left: 1px solid #333333;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.nav-title {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #222;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  background: #00ff66;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #00ff66;
+}
+
+/* Camera preview */
+.cam-preview-box {
+  width: 100%;
+  height: 135px;
+  background: #000;
+  border: 1px solid #555;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.cam-preview-box video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+#capture-canvas {
+  display: none;
+}
+
+.cam-live-tag {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: #ff0000;
+  color: #fff;
+  font-size: 7px;
+  padding: 1px 3px;
+  font-weight: bold;
+}
+
+/* Status list */
+.status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 10px;
+  margin-bottom: auto;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px dashed #222;
+  padding-bottom: 4px;
+}
+
+.status-row span {
+  color: #777;
+}
+
+/* Buttons */
+.nav-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid #222;
+  padding-top: 10px;
+}
+
+.btn {
+  background: #111;
+  border: 1px solid #444;
+  color: #fff;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 7px;
+  cursor: pointer;
+  text-align: center;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background: #222;
+  border-color: #fff;
+}
+
+.btn.active {
+  border-color: #00ff66;
+  color: #00ff66;
+}
+
+/* ============================================================ */
+/* DEDICATED BOTTOM CONVERSATION FEED */
+/* ============================================================ */
+.bottom-prediction-block {
+  position: fixed;
+  bottom: 20px;
+  left: 45%;
+  transform: translateX(-50%);
+  width: 480px;
+  max-width: 90vw;
+  background: #000000;
+  border: 1.5px solid #ffffff;
+  padding: 10px 16px;
+  z-index: 15;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.25s ease;
+}
+
+.bottom-prediction-block.detected {
+  border-color: #00ff66;
+  box-shadow: 0 0 20px rgba(0, 255, 102, 0.3);
+}
+
+.pred-corner-tl {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+}
+
+.pred-corner-br {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-bottom: 2px solid #ffffff;
+  border-right: 2px solid #ffffff;
+}
+
+.pred-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #222;
+  padding-bottom: 4px;
+}
+
+.pred-tag {
+  font-size: 8px;
+  color: #888888;
+  letter-spacing: 1.5px;
+}
+
+.mode-badge {
+  font-size: 8px;
+  background: #111;
+  color: #00ff66;
+  border: 1px solid #00ff66;
+  padding: 1px 6px;
+  letter-spacing: 1px;
+}
+
+.pred-confidence {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #00ff66;
+}
+
+/* Live Token Ribbon */
+.dialogue-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 4px 0;
+  min-height: 26px;
+  scrollbar-width: none; /* Firefox */
+}
+.dialogue-ribbon::-webkit-scrollbar {
+  display: none; /* Chrome/Edge */
+}
+
+.token-placeholder {
+  font-size: 10px;
+  color: #444444;
+  letter-spacing: 1px;
+  font-style: italic;
+}
+
+.token-chip {
+  background: #0d0d0d;
+  border: 1px solid #00ff66;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  padding: 2px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  animation: chipAppear 0.2s ease-out;
+}
+
+.token-chip .arrow {
+  color: #555;
+  font-size: 8px;
+}
+
+@keyframes chipAppear {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Sentence & Active Sign */
+.pred-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sentence-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.sentence-label {
+  font-size: 8px;
+  color: #666;
+  letter-spacing: 1.5px;
+}
+
+.pred-sign {
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  min-height: 24px;
+}
+
+/* Person 2 Hearing Reply Box */
+.person2-reply-box {
+  border-top: 1px dashed #00ffff;
+  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: p2Appear 0.3s ease;
+}
+
+.p2-label {
+  font-size: 8px;
+  color: #00ffff;
+  letter-spacing: 1.5px;
+  font-weight: bold;
+}
+
+.p2-text {
+  font-size: 12px;
+  color: #ffffff;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  line-height: 1.3;
+}
+
+@keyframes p2Appear {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mic Active Recording Pulsing */
+.btn.recording {
+  border-color: #00ffff !important;
+  color: #00ffff !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  animation: pulseMic 1.2s infinite;
+}
+
+@keyframes pulseMic {
+  0% { box-shadow: 0 0 5px rgba(0, 255, 255, 0.3); }
+  50% { box-shadow: 0 0 15px rgba(0, 255, 255, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(0, 255, 255, 0.3); }
+}
+

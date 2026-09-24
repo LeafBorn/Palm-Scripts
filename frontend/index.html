@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PLAM SCRIPT</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Circuit lines matching reference image -->
+  <svg class="circuit-overlay" viewBox="0 0 1200 800" preserveAspectRatio="none">
+    <path d="M 450 280 L 350 220 L 260 220" stroke="white" stroke-width="1.2" fill="none" opacity="0.6"/>
+    <circle cx="260" cy="220" r="3" fill="white"/>
+    
+    <path d="M 460 520 L 380 600 L 260 600" stroke="white" stroke-width="1.2" fill="none" opacity="0.6"/>
+    <circle cx="380" cy="600" r="3.5" fill="white"/>
+    <circle cx="360" cy="600" r="3.5" fill="none" stroke="white" stroke-width="1"/>
+    <circle cx="340" cy="600" r="3.5" fill="white"/>
+
+    <path d="M 740 400 L 860 400" stroke="white" stroke-width="1.2" fill="none" opacity="0.6"/>
+    <circle cx="860" cy="400" r="3.5" fill="white"/>
+  </svg>
+
+  <!-- 1. TOP-LEFT RECTANGLE -->
+  <div class="tech-box box-top-left">
+    <div class="box-notch"></div>
+    <span class="box-plus">+</span>
+    <div class="box-title">Sliding Window Augmentation</div>
+    <div class="box-sub" id="stat-buffer">BUFFER: 0 / 30 FRAMES</div>
+  </div>
+
+  <!-- 2. BOTTOM-LEFT RECTANGLE -->
+  <div class="tech-box box-bottom-left">
+    <div class="box-notch"></div>
+    <span class="box-plus">+</span>
+    <div class="box-title">Trained on 100+ Signs</div>
+    <div class="box-sub">101 CLASSES • 150 LANDMARKS</div>
+  </div>
+
+  <!-- 3. RIGHT RECTANGLE (with User Avatar) -->
+  <div class="tech-box box-right">
+    <div class="box-notch"></div>
+    <span class="box-plus">+</span>
+    <div class="box-title">Real Time LSTM Prediction</div>
+    <div class="box-sub" id="stat-prediction">EDGE-TTS ACTIVE</div>
+    
+    <div class="user-icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- CENTER HUD (EXACT PALMSCRIPT HUD LAYOUT) -->
+  <div class="container" id="hud-container">
+    <canvas id="hud" width="520" height="520"></canvas>
+
+    <div class="center-info">
+      <div class="model-name">PLAM SCRIPT</div>
+      <div class="model-id">PS-12</div>
+      <div class="coords" id="center-coords">18.00000000 / 22.00000000</div>
+    </div>
+
+    <!-- Exact Crosshair from PalmScript HUD -->
+    <svg class="crosshair" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="25" y1="5" x2="25" y2="20" stroke="white" stroke-width="1"/>
+      <line x1="25" y1="30" x2="25" y2="45" stroke="white" stroke-width="1"/>
+      <line x1="5" y1="25" x2="20" y2="25" stroke="white" stroke-width="1"/>
+      <line x1="30" y1="25" x2="45" y2="25" stroke="white" stroke-width="1"/>
+      <circle cx="25" cy="25" r="6" stroke="white" stroke-width="0.8" fill="none"/>
+      <circle cx="25" cy="25" r="1.5" fill="white"/>
+    </svg>
+
+    <div class="badge-top-right">PS<br>▲</div>
+    <div class="badge-left">取り消し</div>
+    <div class="badge-right">取り消し</div>
+    <div class="bottom-text">LOCKOUT AND FEEDBACK PRIORITY</div>
+    <div class="bottom-coords" id="livecoords">10.09090909 / 19.09090909</div>
+  </div>
+
+  <!-- DEDICATED BOTTOM CONVERSATION FEED -->
+  <div class="bottom-prediction-block" id="pred-block">
+    <div class="pred-corner-tl"></div>
+    <div class="pred-corner-br"></div>
+    
+    <!-- Header tags -->
+    <div class="pred-header">
+      <span class="pred-tag" id="feed-tag">PERSON 1 (SIGNING) • DIALOGUE FEED</span>
+      <span class="mode-badge" id="mode-badge">STREAM MODE</span>
+      <div class="pred-confidence" id="live-confidence">0.0%</div>
+    </div>
+
+    <!-- Live Token Accumulator Ribbon -->
+    <div class="dialogue-ribbon" id="token-ribbon">
+      <span class="token-placeholder">Perform signs to build sentence...</span>
+    </div>
+
+    <!-- Active & Synthesized Sentence Display -->
+    <div class="pred-content">
+      <div class="sentence-box">
+        <span class="sentence-label">TRANSLATED:</span>
+        <div class="pred-sign" id="live-sign-text">READY</div>
+      </div>
+    </div>
+
+    <!-- Person 2 (Hearing) Voice Reply Box -->
+    <div class="person2-reply-box" id="person2-box" style="display: none;">
+      <span class="p2-label">🗣️ PERSON 2 (HEARING):</span>
+      <span class="p2-text" id="person2-text">Listening...</span>
+    </div>
+  </div>
+
+  <!-- RIGHT VERTICAL NAVBAR -->
+  <aside class="vertical-navbar">
+    <div class="nav-title">
+      <span>PLAM SCRIPT</span>
+      <div class="status-dot" id="ws-dot"></div>
+    </div>
+
+    <!-- Small Camera Self Preview -->
+    <div class="cam-preview-box" id="cam-box">
+      <video id="webcam" autoplay playsinline muted></video>
+      <canvas id="capture-canvas" width="640" height="480"></canvas>
+      <div class="cam-live-tag">LIVE</div>
+    </div>
+
+    <!-- Status -->
+    <div class="status-list">
+      <div class="status-row">
+        <span>HAND DETECTED:</span>
+        <strong id="hand-status" style="color: #666;">NO</strong>
+      </div>
+      <div class="status-row">
+        <span>FPS:</span>
+        <strong id="fps-display">30</strong>
+      </div>
+      <div class="status-row">
+        <span>VOICE (TTS):</span>
+        <strong id="tts-status" style="color: #00ff66;">EDGE-TTS</strong>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="nav-btns">
+      <button class="btn active" id="btn-mode">⚡ MODE: SENTENCE</button>
+      <button class="btn" id="btn-mic">🎤 TALK BACK (MIC)</button>
+      <button class="btn active" id="btn-sound">🔊 SOUND: ON</button>
+      <button class="btn" id="btn-clear">🗑️ CLEAR</button>
+    </div>
+  </aside>
+
+  <!-- Audio Player -->
+  <audio id="tts-player" preload="auto"></audio>
+
+  <script src="app.js"></script>
+</body>
+</html>
