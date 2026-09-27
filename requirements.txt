@@ -1,11 +1,16 @@
+# Core ML & Computer Vision
+tensorflow-cpu==2.15.1
 mediapipe==0.10.21
-tensorflow==2.15.1
-numpy==1.26.4
-pandas==2.2.3
-scikit-learn==1.5.2
+opencv-python-headless==4.11.0.86
 protobuf==4.25.8
-opencv-python-headless
-fastapi
-uvicorn[standard]
-edge-tts
-websockets
+numpy==1.26.4
+scikit-learn==1.5.2
+
+# Backend & API Framework
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+websockets==17.1
+
+# Text-To-Speech
+edge-tts==7.2.8
+aiohttp>=3.9.0

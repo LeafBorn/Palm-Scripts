@@ -150,12 +150,11 @@ async function initWebcam() {
     });
     video.srcObject = stream;
     video.onloadedmetadata = () => {
-      const aspect = (video.videoHeight || 480) / (video.videoWidth || 640);
-      const targetW = 360;
-      const targetH = Math.round(targetW * aspect);
-      captureCanvas.width = targetW;
-      captureCanvas.height = targetH;
-      console.log(`📐 Optimized streaming resolution: ${targetW}x${targetH}`);
+      if (video.videoWidth && video.videoHeight) {
+        captureCanvas.width = video.videoWidth;
+        captureCanvas.height = video.videoHeight;
+        console.log(`📐 Capture resolution matched: ${video.videoWidth}x${video.videoHeight}`);
+      }
     };
     console.log("📷 Camera connected.");
     unlockAudio();
@@ -210,7 +209,7 @@ function sendFrame() {
 
   isProcessingFrame = true;
   captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-  const jpeg = captureCanvas.toDataURL('image/jpeg', 0.50);
+  const jpeg = captureCanvas.toDataURL('image/jpeg', 0.75);
   ws.send(jpeg);
 
   // FPS calculation

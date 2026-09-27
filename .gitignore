@@ -1,17 +1,7 @@
 venv/
+processed_data/
+raw_recordings/
+previous work/
 __pycache__/
 *.pyc
-*.pyo
-.DS_Store
-*.bat
-
-# Datasets (only trained models in sign_model/ are needed for deployment)
-raw_recordings/
-processed_data/
-movement_data/
-movement_keypoints/
-previous work/
-
-# Scratch & test scripts
-scratch/
-.system_generated/
+.env
