@@ -3,6 +3,16 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import mediapipe as mp
+try:
+    import mediapipe.python.solutions.holistic as mp_holistic
+except Exception:
+    try:
+        from mediapipe import solutions
+        mp_holistic = solutions.holistic
+    except Exception:
+        mp_holistic = getattr(mp, 'solutions', None)
+        if mp_holistic:
+            mp_holistic = mp_holistic.holistic
 from collections import deque
 import time
 
@@ -46,7 +56,7 @@ class SignRecognizer:
         
         # MediaPipe Holistic - Higher sensitivity for reliable hand detection
         print("📷 Initializing MediaPipe Holistic...")
-        self.mp_holistic = mp.solutions.holistic
+        self.mp_holistic = mp_holistic
         try:
             self.holistic = self.mp_holistic.Holistic(
                 static_image_mode=False,
