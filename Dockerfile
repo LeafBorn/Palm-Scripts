@@ -1,9 +1,9 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
-    PORT=7860
+    PORT=10000
 
 # Install system dependencies required for OpenCV and MediaPipe
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create user with UID 1000 (standard for Hugging Face Spaces)
+# Create non-root user
 RUN useradd -m -u 1000 user
 USER user
 ENV HOME=/home/user \
@@ -27,8 +27,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # Copy application files
 COPY --chown=user:user . .
 
-# Expose default Hugging Face Spaces port
-EXPOSE 7860
+EXPOSE 10000
 
-# Start FastAPI application
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "7860"]
+# Start FastAPI application using dynamic port for Render / Cloud compatibility
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-10000}"]
