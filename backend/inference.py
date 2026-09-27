@@ -57,6 +57,8 @@ class SignRecognizer:
         # MediaPipe Holistic - Higher sensitivity for reliable hand detection
         print("📷 Initializing MediaPipe Holistic...")
         self.mp_holistic = mp_holistic
+        if self.mp_holistic is None:
+            raise ImportError("MediaPipe Holistic solution module not found! Ensure mediapipe<1.0.0 is installed.")
         try:
             self.holistic = self.mp_holistic.Holistic(
                 static_image_mode=False,
