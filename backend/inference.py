@@ -45,14 +45,27 @@ class SignRecognizer:
         print(f"✅ Model Loaded. Vocabulary: {len(self.signs)} signs.")
         
         # MediaPipe Holistic - Higher sensitivity for reliable hand detection
+        print("📷 Initializing MediaPipe Holistic...")
         self.mp_holistic = mp.solutions.holistic
-        self.holistic = self.mp_holistic.Holistic(
-            static_image_mode=False,
-            model_complexity=1,
-            smooth_landmarks=True,
-            min_detection_confidence=0.35,
-            min_tracking_confidence=0.25
-        )
+        try:
+            self.holistic = self.mp_holistic.Holistic(
+                static_image_mode=False,
+                model_complexity=1,
+                smooth_landmarks=True,
+                min_detection_confidence=0.35,
+                min_tracking_confidence=0.25
+            )
+            print("✅ MediaPipe Holistic initialized successfully!")
+        except Exception as e:
+            print(f"⚠️ Retrying MediaPipe Holistic with model_complexity=0: {e}")
+            self.holistic = self.mp_holistic.Holistic(
+                static_image_mode=False,
+                model_complexity=0,
+                smooth_landmarks=False,
+                min_detection_confidence=0.35,
+                min_tracking_confidence=0.25
+            )
+            print("✅ MediaPipe Holistic (complexity=0 fallback) initialized!")
         
         # Rolling Keypoints Buffer
         self.sequence_buffer = deque(maxlen=self.window_size)

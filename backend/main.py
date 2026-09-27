@@ -29,16 +29,30 @@ recognizer: SignRecognizer = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global recognizer
-    print("🚀 Initializing SignRecognizer engine...")
-    recognizer = SignRecognizer()
-    # Trigger background audio pre-caching for 0ms TTS latency
-    asyncio.create_task(pre_cache_all_signs(recognizer.signs.tolist()))
+    try:
+        print("🚀 Initializing SignRecognizer engine...")
+        recognizer = SignRecognizer()
+        print("✅ SignRecognizer ready!")
+        # Trigger background audio pre-caching for 0ms TTS latency
+        asyncio.create_task(pre_cache_all_signs(recognizer.signs.tolist()))
+    except Exception as e:
+        import traceback
+        print("❌ CRITICAL ERROR IN STARTUP LIFESPAN:")
+        traceback.print_exc()
+        # Keep web server alive so port binding succeeds without crash!
     yield
     print("🛑 Shutting down SignRecognizer...")
     if recognizer:
-        recognizer.close()
+        try:
+            recognizer.close()
+        except Exception:
+            pass
 
 app = FastAPI(title="PalmScript Sign Language HUD API", lifespan=lifespan)
+
+@app.get("/health")
+async def health():
+    return {"status": "ok", "recognizer_ready": recognizer is not None}
 
 app.add_middleware(
     CORSMiddleware,
@@ -96,6 +110,15 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_json({"error": "Invalid frame"})
                 continue
                 
+            # Ensure recognizer is ready
+            if recognizer is None:
+                try:
+                    print("⏳ Lazy-loading SignRecognizer...")
+                    recognizer = SignRecognizer()
+                except Exception as err:
+                    await websocket.send_json({"error": f"Recognizer initializing: {err}"})
+                    continue
+
             # Process with SignRecognizer
             payload = recognizer.process_frame(frame)
             await websocket.send_json(payload)
