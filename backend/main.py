@@ -26,9 +26,11 @@ FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
 # Global Recognizer instance
 recognizer: SignRecognizer = None
 
+startup_error = ""
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global recognizer
+    global recognizer, startup_error
     try:
         print("🚀 Initializing SignRecognizer engine...")
         recognizer = SignRecognizer()
@@ -37,6 +39,7 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(pre_cache_all_signs(recognizer.signs.tolist()))
     except Exception as e:
         import traceback
+        startup_error = traceback.format_exc()
         print("❌ CRITICAL ERROR IN STARTUP LIFESPAN:")
         traceback.print_exc()
         # Keep web server alive so port binding succeeds without crash!
@@ -52,7 +55,11 @@ app = FastAPI(title="PalmScript Sign Language HUD API", lifespan=lifespan)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "recognizer_ready": recognizer is not None}
+    return {
+        "status": "ok",
+        "recognizer_ready": recognizer is not None,
+        "startup_error": startup_error
+    }
 
 app.add_middleware(
     CORSMiddleware,
