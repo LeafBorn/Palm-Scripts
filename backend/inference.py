@@ -18,16 +18,27 @@ class SignRecognizer:
         self.consensus_frames = consensus_frames
         self.history_len = history_len
         
-        # Load Model
-        best_path = os.path.join(MODEL_DIR, 'best_model.keras')
-        fallback_path = os.path.join(MODEL_DIR, 'model.keras')
-        load_path = best_path if os.path.exists(best_path) else fallback_path
+        # Load Model (HDF5 .h5 prioritized for 100% universal Linux/Cloud compatibility)
+        model_candidates = [
+            os.path.join(MODEL_DIR, 'best_model.h5'),
+            os.path.join(MODEL_DIR, 'best_model.keras'),
+            os.path.join(MODEL_DIR, 'model.keras')
+        ]
         
-        if not os.path.exists(load_path):
-            raise FileNotFoundError(f"Model file not found in {MODEL_DIR}!")
-            
-        print(f"📦 Loading Sign Model: {load_path}")
-        self.model = tf.keras.models.load_model(load_path)
+        self.model = None
+        for candidate in model_candidates:
+            if os.path.exists(candidate):
+                try:
+                    print(f"📦 Attempting to load model: {candidate}")
+                    self.model = tf.keras.models.load_model(candidate)
+                    print(f"✅ Successfully loaded model from: {candidate}")
+                    break
+                except Exception as e:
+                    print(f"⚠️ Failed loading {candidate}: {e}")
+                    
+        if self.model is None:
+            raise FileNotFoundError(f"Could not load any valid model from {MODEL_DIR}!")
+
         self.signs = np.load(os.path.join(MODEL_DIR, 'signs.npy'), allow_pickle=True)
         self.mean = np.load(os.path.join(MODEL_DIR, 'mean.npy'))
         self.std = np.load(os.path.join(MODEL_DIR, 'std.npy'))
