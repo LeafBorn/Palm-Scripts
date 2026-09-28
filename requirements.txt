@@ -1,11 +1,9 @@
-# Core ML & Computer Vision
+# Core ML & Vision
 tensorflow-cpu==2.15.1
-mediapipe>=0.10.21,<1.0.0
-opencv-python-headless>=4.8.0.74
-protobuf>=4.25.0,<5.0.0
 numpy==1.26.4
 h5py>=3.10.0
-scikit-learn>=1.4.0
+mediapipe>=0.10.0
+opencv-python-headless>=4.8.0
 
 # Backend & API Framework
 fastapi>=0.110.0

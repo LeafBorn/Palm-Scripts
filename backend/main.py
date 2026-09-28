@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -8,9 +9,8 @@ if BACKEND_DIR not in sys.path:
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-import cv2
-import base64
 import asyncio
+import cv2
 import numpy as np
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -25,7 +25,6 @@ FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
 
 # Global Recognizer instance
 recognizer: SignRecognizer = None
-
 startup_error = ""
 
 @asynccontextmanager
@@ -42,7 +41,6 @@ async def lifespan(app: FastAPI):
         startup_error = traceback.format_exc()
         print("❌ CRITICAL ERROR IN STARTUP LIFESPAN:")
         traceback.print_exc()
-        # Keep web server alive so port binding succeeds without crash!
     yield
     print("🛑 Shutting down SignRecognizer...")
     if recognizer:
@@ -96,47 +94,51 @@ async def get_tts(text: str):
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    global recognizer
     await websocket.accept()
-    print("🔌 Client connected to Sign Recognition WebSocket stream")
+    print("🔌 Client connected to WebSocket stream")
+    
+    if recognizer is None:
+        try:
+            recognizer = SignRecognizer()
+        except Exception as e:
+            await websocket.send_json({"error": f"Recognizer init failed: {e}"})
+            
     try:
         while True:
-            # Receive frame as base64 or bytes
-            data = await websocket.receive_text()
+            message = await websocket.receive()
             
-            # Format: 'data:image/jpeg;base64,...' or raw base64 string
-            if ',' in data:
-                _, encoded = data.split(',', 1)
-            else:
-                encoded = data
-                
-            img_bytes = base64.b64decode(encoded)
-            np_arr = np.frombuffer(img_bytes, np.uint8)
-            frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-            
-            if frame is None:
-                await websocket.send_json({"error": "Invalid frame"})
-                continue
-                
-            # Ensure recognizer is ready
-            if recognizer is None:
+            # Handle binary JPEG frame from browser webcam
+            if "bytes" in message and message["bytes"]:
+                raw_bytes = message["bytes"]
+                np_arr = np.frombuffer(raw_bytes, np.uint8)
+                frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+                if frame is not None:
+                    payload = recognizer.process_frame(frame)
+                    await websocket.send_json(payload)
+                else:
+                    await websocket.send_json({"error": "Frame decode failed"})
+                    
+            # Handle JSON keypoints payload (if client sends pre-extracted landmarks)
+            elif "text" in message and message["text"]:
                 try:
-                    print("⏳ Lazy-loading SignRecognizer...")
-                    recognizer = SignRecognizer()
+                    data = json.loads(message["text"])
+                    if "keypoints" in data:
+                        kps = np.array(data["keypoints"], dtype=np.float32)
+                        has_left = data.get("has_left", False)
+                        has_right = data.get("has_right", False)
+                        payload = recognizer.process_keypoints(kps, has_left, has_right)
+                        await websocket.send_json(payload)
                 except Exception as err:
-                    await websocket.send_json({"error": f"Recognizer initializing: {err}"})
-                    continue
-
-            # Process with SignRecognizer
-            payload = recognizer.process_frame(frame)
-            await websocket.send_json(payload)
-            
+                    await websocket.send_json({"error": str(err)})
+                    
     except WebSocketDisconnect:
         print("🔌 Client disconnected from WebSocket")
     except Exception as e:
         print(f"⚠️ WebSocket error: {e}")
         try:
             await websocket.close()
-        except:
+        except Exception:
             pass
 
 # Mount frontend files at root

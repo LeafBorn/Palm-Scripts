@@ -1,5 +1,5 @@
 // ============================================================
-// PLAM SCRIPT - CLIENT ENGINE
+// PALMSCRIPT CLIENT ENGINE (High-Speed Native Vision Stream)
 // ============================================================
 
 const video = document.getElementById('webcam');
@@ -40,6 +40,10 @@ let speechRecognizer = null;
 let frameCount = 0;
 let lastFpsTime = performance.now();
 
+// Capture stream dimensions (optimized for instant 30-40 FPS transfer)
+const STREAM_WIDTH = 360;
+const STREAM_HEIGHT = 270;
+
 // ============================================================
 // 1. AUTOMATIC AUDIO UNLOCK (NO MANUAL BUTTON REQUIRED)
 // ============================================================
@@ -64,7 +68,7 @@ function unlockAudio() {
       window.removeEventListener(evt, unlockAudio);
     });
   }).catch(() => {
-    // Will retry seamlessly on next interaction
+    // Retry seamlessly on next interaction
   });
 }
 
@@ -73,7 +77,6 @@ function unlockAudio() {
   window.addEventListener(evt, unlockAudio, { passive: true });
 });
 
-// Attempt immediate auto-unlock on launch
 setTimeout(unlockAudio, 300);
 
 // Single Word Speaker
@@ -144,19 +147,23 @@ function updateRibbonUI() {
 // ============================================================
 async function initWebcam() {
   try {
+    captureCanvas.width = STREAM_WIDTH;
+    captureCanvas.height = STREAM_HEIGHT;
+
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
+      video: { 
+        width: { ideal: 640 }, 
+        height: { ideal: 480 }, 
+        frameRate: { ideal: 30 } 
+      },
       audio: false
     });
+    
     video.srcObject = stream;
     video.onloadedmetadata = () => {
-      if (video.videoWidth && video.videoHeight) {
-        captureCanvas.width = video.videoWidth;
-        captureCanvas.height = video.videoHeight;
-        console.log(`📐 Capture resolution matched: ${video.videoWidth}x${video.videoHeight}`);
-      }
+      console.log(`📷 Camera connected & streaming.`);
+      sendFrame();
     };
-    console.log("📷 Camera connected.");
     unlockAudio();
   } catch (err) {
     console.error("Camera error:", err);
@@ -166,77 +173,94 @@ async function initWebcam() {
 }
 
 // ============================================================
-// 3. WEBSOCKET WITH FLOW-CONTROL (NO QUEUE LAG)
+// 3. WEBSOCKET REAL-TIME FRAME STREAM (30+ FPS)
 // ============================================================
 function connectWebSocket() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
   ws.onopen = () => {
-    console.log("🔌 Connected to server.");
-    wsDot.style.background = "#00ff66";
+    console.log("🔌 Connected to Vision Server.");
+    if (wsDot) wsDot.style.background = "#00ff66";
     isProcessingFrame = false;
     sendFrame();
   };
 
   ws.onmessage = (event) => {
-    isProcessingFrame = false; // READY FOR NEXT FRAME
+    isProcessingFrame = false; // Ready for next frame
 
     try {
       const data = JSON.parse(event.data);
       handleServerResponse(data);
     } catch (e) {
-      console.error(e);
+      console.error("Error parsing response:", e);
     }
 
-    // Immediately trigger next frame
+    // Immediately trigger next frame loop
     requestAnimationFrame(sendFrame);
   };
 
   ws.onclose = () => {
-    wsDot.style.background = "#ff3344";
+    if (wsDot) wsDot.style.background = "#ff3344";
     isProcessingFrame = false;
-    setTimeout(connectWebSocket, 2000);
+    setTimeout(connectWebSocket, 1500);
   };
 }
 
 function sendFrame() {
   if (isProcessingFrame || !ws || ws.readyState !== WebSocket.OPEN) return;
-  if (video.readyState < video.HAVE_CURRENT_DATA) {
+  if (!video || video.readyState < video.HAVE_CURRENT_DATA) {
     requestAnimationFrame(sendFrame);
     return;
   }
 
   isProcessingFrame = true;
-  captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-  const jpeg = captureCanvas.toDataURL('image/jpeg', 0.75);
-  ws.send(jpeg);
+
+  // Draw video flipped horizontally to match training opencv cv2.flip(frame, 1)
+  captureCtx.save();
+  captureCtx.scale(-1, 1);
+  captureCtx.drawImage(video, -STREAM_WIDTH, 0, STREAM_WIDTH, STREAM_HEIGHT);
+  captureCtx.restore();
+
+  // Convert to lightweight JPEG blob (~8-12KB) and send over WebSocket
+  captureCanvas.toBlob((blob) => {
+    if (blob && ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(blob);
+    } else {
+      isProcessingFrame = false;
+      requestAnimationFrame(sendFrame);
+    }
+  }, 'image/jpeg', 0.6);
 
   // FPS calculation
   frameCount++;
   const now = performance.now();
   if (now - lastFpsTime >= 1000) {
-    fpsDisplay.textContent = frameCount;
+    if (fpsDisplay) fpsDisplay.textContent = frameCount;
     frameCount = 0;
     lastFpsTime = now;
   }
 }
 
 function handleServerResponse(data) {
-  // Hand tracking feedback
+  // Hand detection status
   if (data.hand_detected) {
-    handStatus.textContent = "YES";
-    handStatus.style.color = "#00ff66";
-    camBox.style.borderColor = "#00ff66";
+    if (handStatus) {
+      handStatus.textContent = "YES";
+      handStatus.style.color = "#00ff66";
+    }
+    if (camBox) camBox.style.borderColor = "#00ff66";
   } else {
-    handStatus.textContent = "NO";
-    handStatus.style.color = "#666666";
-    camBox.style.borderColor = "#555555";
+    if (handStatus) {
+      handStatus.textContent = "NO";
+      handStatus.style.color = "#666666";
+    }
+    if (camBox) camBox.style.borderColor = "#555555";
   }
 
   // Buffer progress in Left Box
   const buf = data.buffer_length || 0;
-  statBuffer.textContent = `BUFFER: ${buf} / 30 FRAMES`;
+  if (statBuffer) statBuffer.textContent = `BUFFER: ${buf} / 30 FRAMES`;
 
   const isValidSign = data.sign && !['Signing...', 'Detecting...', 'READY', 'UNCERTAIN'].includes(data.sign);
 
@@ -289,8 +313,8 @@ function handleServerResponse(data) {
     }
     if (predBlock) predBlock.classList.remove('detected');
 
-    // Sentence Completion on Pause / Hand Drop
-    if (isSentenceMode && sentenceTokens.length > 0 && (data.no_hand_frames >= 20 || !data.hand_detected)) {
+    // Sentence Completion on Hand Drop
+    if (isSentenceMode && sentenceTokens.length > 0 && (data.no_hand_frames >= 15 || !data.hand_detected)) {
       const fullSentence = sentenceTokens.join(' ');
       liveSignText.textContent = `"${fullSentence.toUpperCase()}"`;
       statPrediction.textContent = `PHRASE SENT: ${fullSentence.toUpperCase()}`;
@@ -312,7 +336,7 @@ function handleServerResponse(data) {
 function initSpeechRecognition() {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRec) {
-    alert("Speech Recognition is supported natively in Google Chrome or Microsoft Edge. Please open this app in Chrome/Edge.");
+    alert("Speech Recognition is supported natively in Google Chrome or Microsoft Edge.");
     return null;
   }
 
@@ -429,7 +453,7 @@ btnClear.addEventListener('click', () => {
 });
 
 // ============================================================
-// 4. EXACT PALMSCRIPT HUD CANVAS ANIMATION
+// 4. PALMSCRIPT HUD CANVAS ANIMATION
 // ============================================================
 const canvas = document.getElementById('hud');
 const ctx = canvas.getContext('2d');
@@ -569,41 +593,25 @@ function draw() {
   const cw = tick * 0.8;
   const ccw = -tick * 0.5;
 
-  // Outermost thin arc
   drawArc(cx, cy, 240, -160, 80, 0.5, '#333');
-
-  // Outer scale ticks (clockwise slow)
   drawTickRing(cw * 0.2, 228, 60, 5, 0.5, '#444');
   drawTickRing(cw * 0.2, 228, 12, 10, 1, '#666');
   drawScaleNumbers(cw * 0.2, 210);
 
-  // Outer white segment ring (clockwise)
   drawRotatingRing(cw, 200, 8, 8, 14, '#fff');
-
-  // Second ring segments (anticlockwise)
   drawRotatingRing(ccw, 178, 12, 4, 6, '#aaa');
-
-  // PLAM SCRIPT text arc (slow clockwise)
   drawPalmScriptText(cw * 0.15, 160);
-
-  // Dashed ring
   drawArc(cx, cy, 148, -180, 180, 0.5, '#444', [4, 4]);
 
-  // Inner segment ring (clockwise faster)
   drawRotatingRing(cw * 1.5, 130, 20, 3, 4, '#777');
-
-  // Fine tick ring (anticlockwise)
   drawTickRing(ccw * 1.2, 118, 48, 6, 0.5, '#555');
 
-  // Inner circles
   drawArc(cx, cy, 85, -180, 180, 1, '#555');
   drawArc(cx, cy, 60, -180, 180, 0.5, '#333');
 
-  // Small decorative circles
   drawSmallCircle(cx - 90, cy, 22, 'LSPd', 'LUNNE');
   drawTriangle(cx - 90, cy, 8, '#fff');
 
-  // Live coords update
   const angle = tick * 0.01;
   const lat = (18 + Math.sin(angle) * 0.5).toFixed(8);
   const lon = (22 + Math.cos(angle) * 0.3).toFixed(8);
