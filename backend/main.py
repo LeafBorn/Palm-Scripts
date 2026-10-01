@@ -1,6 +1,5 @@
 import sys
 import os
-import json
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -9,8 +8,9 @@ if BACKEND_DIR not in sys.path:
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-import asyncio
 import cv2
+import base64
+import asyncio
 import numpy as np
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -25,39 +25,30 @@ FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
 
 # Global Recognizer instance
 recognizer: SignRecognizer = None
-startup_error = ""
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global recognizer, startup_error
-    try:
-        print("🚀 Initializing SignRecognizer engine...")
-        recognizer = SignRecognizer()
-        print("✅ SignRecognizer ready!")
-        # Trigger background audio pre-caching for 0ms TTS latency
-        asyncio.create_task(pre_cache_all_signs(recognizer.signs.tolist()))
-    except Exception as e:
-        import traceback
-        startup_error = traceback.format_exc()
-        print("❌ CRITICAL ERROR IN STARTUP LIFESPAN:")
-        traceback.print_exc()
+    global recognizer
+    print("🚀 Initializing SignRecognizer engine...")
+    recognizer = SignRecognizer()
+    # Trigger background audio pre-caching for 0ms TTS latency
+    asyncio.create_task(pre_cache_all_signs(recognizer.signs.tolist()))
+    
+    # Auto-open browser when model is ready
+    async def open_browser():
+        await asyncio.sleep(1.0)
+        import webbrowser
+        current_port = os.environ.get("PORT", "8000")
+        webbrowser.open(f"http://localhost:{current_port}")
+        print(f"🌐 Browser opened to http://localhost:{current_port}")
+        
+    asyncio.create_task(open_browser())
     yield
     print("🛑 Shutting down SignRecognizer...")
     if recognizer:
-        try:
-            recognizer.close()
-        except Exception:
-            pass
+        recognizer.close()
 
 app = FastAPI(title="PalmScript Sign Language HUD API", lifespan=lifespan)
-
-@app.get("/health")
-async def health():
-    return {
-        "status": "ok",
-        "recognizer_ready": recognizer is not None,
-        "startup_error": startup_error
-    }
 
 app.add_middleware(
     CORSMiddleware,
@@ -94,51 +85,38 @@ async def get_tts(text: str):
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    global recognizer
     await websocket.accept()
-    print("🔌 Client connected to WebSocket stream")
-    
-    if recognizer is None:
-        try:
-            recognizer = SignRecognizer()
-        except Exception as e:
-            await websocket.send_json({"error": f"Recognizer init failed: {e}"})
-            
+    print("🔌 Client connected to Sign Recognition WebSocket stream")
     try:
         while True:
-            message = await websocket.receive()
+            # Receive frame as base64 or bytes
+            data = await websocket.receive_text()
             
-            # Handle binary JPEG frame from browser webcam
-            if "bytes" in message and message["bytes"]:
-                raw_bytes = message["bytes"]
-                np_arr = np.frombuffer(raw_bytes, np.uint8)
-                frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-                if frame is not None:
-                    payload = recognizer.process_frame(frame)
-                    await websocket.send_json(payload)
-                else:
-                    await websocket.send_json({"error": "Frame decode failed"})
-                    
-            # Handle JSON keypoints payload (if client sends pre-extracted landmarks)
-            elif "text" in message and message["text"]:
-                try:
-                    data = json.loads(message["text"])
-                    if "keypoints" in data:
-                        kps = np.array(data["keypoints"], dtype=np.float32)
-                        has_left = data.get("has_left", False)
-                        has_right = data.get("has_right", False)
-                        payload = recognizer.process_keypoints(kps, has_left, has_right)
-                        await websocket.send_json(payload)
-                except Exception as err:
-                    await websocket.send_json({"error": str(err)})
-                    
+            # Format: 'data:image/jpeg;base64,...' or raw base64 string
+            if ',' in data:
+                _, encoded = data.split(',', 1)
+            else:
+                encoded = data
+                
+            img_bytes = base64.b64decode(encoded)
+            np_arr = np.frombuffer(img_bytes, np.uint8)
+            frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            
+            if frame is None:
+                await websocket.send_json({"error": "Invalid frame"})
+                continue
+                
+            # Process with SignRecognizer
+            payload = recognizer.process_frame(frame)
+            await websocket.send_json(payload)
+            
     except WebSocketDisconnect:
         print("🔌 Client disconnected from WebSocket")
     except Exception as e:
         print(f"⚠️ WebSocket error: {e}")
         try:
             await websocket.close()
-        except Exception:
+        except:
             pass
 
 # Mount frontend files at root
@@ -147,5 +125,14 @@ if os.path.exists(FRONTEND_DIR):
 
 if __name__ == '__main__':
     import uvicorn
-    print(f"🌐 Starting server on http://localhost:8000")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="PalmScript Sign Language Recognition Server")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8000)), help="Port to run server on")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host address (default: 0.0.0.0)")
+    args, _ = parser.parse_known_args()
+    
+    os.environ["PORT"] = str(args.port)
+    print(f"🌐 Starting server on http://{args.host}:{args.port}")
+    uvicorn.run(app, host=args.host, port=args.port)
+

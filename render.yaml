@@ -1,5 +1,0 @@
-services:
-  - type: web
-    name: echoes
-    runtime: docker
-    plan: free

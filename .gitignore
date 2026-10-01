@@ -1,7 +1,9 @@
-venv/
-processed_data/
-raw_recordings/
-previous work/
-__pycache__/
-*.pyc
-.env
+data
+venv
+keypoints
+model
+previous_work
+processed_data
+raw_recordings
+sign_model
+run_app.bat
